@@ -292,4 +292,3 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
-
