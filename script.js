@@ -2,6 +2,10 @@
 let tournamentData = null;
 let currentRound = 0;
 let isEliminated = false;
+let currentTournamentId = null;
+
+// API Base URL (wird automatisch auf Vercel gesetzt)
+const API_BASE_URL = window.location.origin;
 
 // Skill-Level Multiplikatoren
 const skillMultipliers = {
@@ -85,6 +89,80 @@ function getChanceClass(chance) {
     if (chance >= 40) return 'high';
     if (chance >= 20) return 'medium';
     return 'low';
+}
+
+// API Funktionen
+async function saveTournamentToDatabase(playerCount, gameMode, skillLevel, rounds) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/tournaments`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                player_count: playerCount,
+                game_mode: gameMode,
+                skill_level: skillLevel,
+                rounds: rounds,
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Fehler beim Speichern des Turniers');
+        }
+        
+        const data = await response.json();
+        return data.tournament_id;
+    } catch (error) {
+        console.error('Fehler beim Speichern:', error);
+        return null;
+    }
+}
+
+async function updateTournamentInDatabase(tournamentId, currentRound, isEliminated, rounds) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/tournaments/${tournamentId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                current_round: currentRound,
+                is_eliminated: isEliminated,
+                rounds: rounds
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Fehler beim Aktualisieren des Turniers');
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Fehler beim Aktualisieren:', error);
+        return false;
+    }
+}
+
+async function loadStatistics() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/api/statistics`);
+        
+        if (!response.ok) {
+            throw new Error('Fehler beim Laden der Statistiken');
+        }
+        
+        const stats = await response.json();
+        displayGlobalStatistics(stats);
+    } catch (error) {
+        console.error('Fehler beim Laden der Statistiken:', error);
+    }
+}
+
+// Zeige globale Statistiken an
+function displayGlobalStatistics(stats) {
+    // Hier könnten wir einen zusätzlichen Bereich für globale Statistiken hinzufügen
+    console.log('Globale Statistiken:', stats);
 }
 
 // Rendere die Ergebnisse
@@ -203,7 +281,7 @@ function renderTracking(chances) {
 }
 
 // Markiere eine Runde als gewonnen
-function markRoundWon(roundIndex) {
+async function markRoundWon(roundIndex) {
     if (roundIndex !== currentRound || isEliminated) return;
     
     currentRound++;
@@ -214,11 +292,16 @@ function markRoundWon(roundIndex) {
         currentRound = tournamentData.length;
     }
     
+    // Speichere in Datenbank
+    if (currentTournamentId) {
+        await updateTournamentInDatabase(currentTournamentId, currentRound, isEliminated, tournamentData);
+    }
+    
     updateDisplay();
 }
 
 // Markiere eine Runde als verloren (Elimination)
-function markRoundLost(roundIndex) {
+async function markRoundLost(roundIndex) {
     if (roundIndex !== currentRound || isEliminated) return;
     
     isEliminated = true;
@@ -227,6 +310,11 @@ function markRoundLost(roundIndex) {
     for (let i = currentRound; i < tournamentData.length; i++) {
         tournamentData[i].isActive = false;
         tournamentData[i].winChance = 0;
+    }
+    
+    // Speichere in Datenbank
+    if (currentTournamentId) {
+        await updateTournamentInDatabase(currentTournamentId, currentRound, isEliminated, tournamentData);
     }
     
     updateDisplay();
@@ -238,6 +326,7 @@ function markRoundLost(roundIndex) {
 function resetTracking() {
     currentRound = 0;
     isEliminated = false;
+    currentTournamentId = null;
     
     // Reaktiviere alle Runden
     const playerCount = parseInt(document.getElementById('playerCount').value);
@@ -258,7 +347,7 @@ function updateDisplay() {
 }
 
 // Hauptberechnung
-function calculate() {
+async function calculate() {
     const playerCount = parseInt(document.getElementById('playerCount').value);
     const gameMode = document.getElementById('gameMode').value;
     const skillLevel = document.getElementById('benSkill').value;
@@ -276,8 +365,18 @@ function calculate() {
     currentRound = 0;
     isEliminated = false;
     
+    // Speichere Turnier in Datenbank
+    currentTournamentId = await saveTournamentToDatabase(playerCount, gameMode, skillLevel, tournamentData);
+    
+    if (currentTournamentId) {
+        console.log('Turnier gespeichert mit ID:', currentTournamentId);
+    }
+    
     // Aktualisiere Anzeige
     updateDisplay();
+    
+    // Lade Statistiken
+    await loadStatistics();
 }
 
 // Event Listeners
@@ -291,5 +390,7 @@ document.addEventListener('DOMContentLoaded', function() {
             calculate();
         }
     });
+    
+    // Lade Statistiken beim Start
+    loadStatistics();
 });
-
