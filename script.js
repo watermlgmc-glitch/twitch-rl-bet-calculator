@@ -6,11 +6,11 @@ let currentTournamentId = null;
 const API_BASE_URL = window.location.origin;
 
 const skillMultipliers = {
-    'bronze': 0.30,
-    'silver': 0.35,
-    'gold': 0.45,
-    'platinum': 0.55,
-    'diamond': 0.65
+    \'bronze\': 0.30,
+    \'silver\': 0.35,
+    \'gold\': 0.45,
+    \'platinum\': 0.55,
+    \'diamond\': 0.65
 };
 
 function calculateRounds(playerCount) {
@@ -63,10 +63,10 @@ async function calculateWinChances(playerCount, skillLevel) {
 function getRoundName(round, totalRounds) {
     const roundsFromEnd = totalRounds - round;
     
-    if (roundsFromEnd === 0) return 'Finale';
-    if (roundsFromEnd === 1) return 'Halbfinale';
-    if (roundsFromEnd === 2) return 'Viertelfinale';
-    if (roundsFromEnd === 3) return 'Achtelfinale';
+    if (roundsFromEnd === 0) return \'Finale\';
+    if (roundsFromEnd === 1) return \'Halbfinale\';
+    if (roundsFromEnd === 2) return \'Viertelfinale\';
+    if (roundsFromEnd === 3) return \'Achtelfinale\';
     
     return `Runde ${round}`;
 }
@@ -88,17 +88,17 @@ function calculateOverallWinChance(chances) {
 }
 
 function getChanceClass(chance) {
-    if (chance >= 40) return 'high';
-    if (chance >= 20) return 'medium';
-    return 'low';
+    if (chance >= 40) return \'high\';
+    if (chance >= 20) return \'medium\';
+    return \'low\';
 }
 
 async function saveTournamentToDatabase(playerCount, gameMode, skillLevel, rounds) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/tournaments`, {
-            method: 'POST',
+            method: \'POST\',
             headers: {
-                'Content-Type': 'application/json',
+                \'Content-Type\': \'application/json\',
             },
             body: JSON.stringify({
                 player_count: playerCount,
@@ -109,13 +109,13 @@ async function saveTournamentToDatabase(playerCount, gameMode, skillLevel, round
         });
         
         if (!response.ok) {
-            throw new Error('Fehler beim Speichern des Turniers');
+            throw new Error(\'Fehler beim Speichern des Turniers\');
         }
         
         const data = await response.json();
         return data.tournament_id;
     } catch (error) {
-        console.error('Fehler beim Speichern:', error);
+        console.error(\'Fehler beim Speichern:\', error);
         return null;
     }
 }
@@ -123,9 +123,9 @@ async function saveTournamentToDatabase(playerCount, gameMode, skillLevel, round
 async function updateTournamentInDatabase(tournamentId, currentRound, isEliminated, rounds) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/tournaments/${tournamentId}`, {
-            method: 'PUT',
+            method: \'PUT\',
             headers: {
-                'Content-Type': 'application/json',
+                \'Content-Type\': \'application/json\',
             },
             body: JSON.stringify({
                 current_round: currentRound,
@@ -135,12 +135,12 @@ async function updateTournamentInDatabase(tournamentId, currentRound, isEliminat
         });
         
         if (!response.ok) {
-            throw new Error('Fehler beim Aktualisieren des Turniers');
+            throw new Error(\'Fehler beim Aktualisieren des Turniers\');
         }
         
         return true;
     } catch (error) {
-        console.error('Fehler beim Aktualisieren:', error);
+        console.error(\'Fehler beim Aktualisieren:\', error);
         return false;
     }
 }
@@ -150,13 +150,13 @@ async function loadStatistics() {
         const response = await fetch(`${API_BASE_URL}/api/statistics`);
         
         if (!response.ok) {
-            throw new Error('Fehler beim Laden der Statistiken');
+            throw new Error(\'Fehler beim Laden der Statistiken\');
         }
         
         const stats = await response.json();
         displayGlobalStatistics(stats);
     } catch (error) {
-        console.error('Fehler beim Laden der Statistiken:', error);
+        console.error(\'Fehler beim Laden der Statistiken:\', error);
     }
 }
 
@@ -169,39 +169,39 @@ async function loadPerformanceModel() {
         const stats = await response.json();
         return stats.performance_model;
     } catch (error) {
-        console.error('Fehler beim Laden des Performance-Modells:', error);
+        console.error(\'Fehler beim Laden des Performance-Modells:\', error);
         return null;
     }
 }
 
 function displayGlobalStatistics(stats) {
-    console.log('Globale Statistiken:', stats);
+    console.log(\'Globale Statistiken:\', stats);
 }
 
 function renderResults(chances) {
-    const container = document.getElementById('resultsContainer');
-    container.innerHTML = '';
+    const container = document.getElementById(\'resultsContainer\');
+    container.innerHTML = \'\';
     
     chances.forEach((chanceData, index) => {
-        const roundDiv = document.createElement('div');
-        roundDiv.className = 'round-item';
+        const roundDiv = document.createElement(\'div\');
+        roundDiv.className = \'round-item\';
         if (!chanceData.isActive) {
-            roundDiv.style.opacity = '0.4';
+            roundDiv.style.opacity = \'0.4\';
         }
         
         roundDiv.innerHTML = `
-            <div class="round-info">
-                <div class="round-name">${chanceData.roundName}</div>
-                <div class="round-details">${chanceData.playersRemaining} Spieler verbleibend</div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${chanceData.isActive ? chanceData.winChance : 0}%"></div>
+            <div class=\"round-info\">
+                <div class=\"round-name\">${chanceData.roundName}</div>
+                <div class=\"round-details\">${chanceData.playersRemaining} Spieler verbleibend</div>
+                <div class=\"progress-bar\">
+                    <div class=\"progress-fill\" style=\"width: ${chanceData.isActive ? chanceData.winChance : 0}%\"></div>
                 </div>
             </div>
-            <div class="round-chance">
-                <span class="chance-value ${getChanceClass(chanceData.winChance)}">
+            <div class=\"round-chance\">
+                <span class=\"chance-value ${getChanceClass(chanceData.winChance)}\">
                     ${chanceData.isActive ? chanceData.winChance : 0}%
                 </span>
-                <span class="chance-label">Gewinnchance</span>
+                <span class=\"chance-label\">Gewinnchance</span>
             </div>
         `;
         
@@ -225,51 +225,51 @@ function renderStats(chances) {
         }
     }
     
-    document.getElementById('totalRounds').textContent = totalRounds;
-    document.getElementById('overallWinChance').textContent = `${overallChance}%`;
-    document.getElementById('bestRound').textContent = `${bestRound.roundName} (${bestRound.winChance}%)`;
-    document.getElementById('hardestRound').textContent = `${hardestRound.roundName} (${hardestRound.winChance}%)`;
+    document.getElementById(\'totalRounds\').textContent = totalRounds;
+    document.getElementById(\'overallWinChance\').textContent = `${overallChance}%`;
+    document.getElementById(\'bestRound\').textContent = `${bestRound.roundName} (${bestRound.winChance}%)`;
+    document.getElementById(\'hardestRound\').textContent = `${hardestRound.roundName} (${hardestRound.winChance}%)`;
 }
 
 function renderTracking(chances) {
-    const container = document.getElementById('trackingContainer');
-    container.innerHTML = '';
+    const container = document.getElementById(\'trackingContainer\');
+    container.innerHTML = \'\';
     
     chances.forEach((chanceData, index) => {
-        const trackingDiv = document.createElement('div');
-        trackingDiv.className = 'tracking-round';
+        const trackingDiv = document.createElement(\'div\');
+        trackingDiv.className = \'tracking-round\';
         
         if (index === currentRound && !isEliminated) {
-            trackingDiv.classList.add('active');
+            trackingDiv.classList.add(\'active\');
         }
         
         if (index < currentRound && !isEliminated) {
-            trackingDiv.classList.add('won');
+            trackingDiv.classList.add(\'won\');
         }
         
         if (isEliminated && index >= currentRound) {
-            trackingDiv.classList.add('eliminated');
+            trackingDiv.classList.add(\'eliminated\');
         }
         
         const buttonsHTML = (index === currentRound && !isEliminated) ? `
-            <div class="tracking-buttons">
-                <button class="btn-secondary btn-success" onclick="markRoundWon(${index})">✓ Gewonnen</button>
-                <button class="btn-secondary btn-danger" onclick="markRoundLost(${index})">✗ Verloren</button>
+            <div class=\"tracking-buttons\">
+                <button class=\"btn-secondary btn-success\" onclick=\"markRoundWon(${index})\">✓ Gewonnen</button>
+                <button class=\"btn-secondary btn-danger\" onclick=\"markRoundLost(${index})\">✗ Verloren</button>
             </div>
-        ` : '';
+        ` : \'\';
         
         const statusText = isEliminated && index >= currentRound ? 
-            '<span style="color: var(--danger)">Ausgeschieden</span>' :
+            \'<span>Ausgeschieden</span>\' :
             index < currentRound ? 
-            '<span style="color: var(--success)">Gewonnen</span>' :
+            \'<span>Gewonnen</span>\' :
             index === currentRound && !isEliminated ?
-            '<span style="color: var(--warning)">Aktuelle Runde</span>' :
-            '<span style="color: var(--text-secondary)">Ausstehend</span>';
+            \'<span>Aktuelle Runde</span>\' :
+            \'<span>Ausstehend</span>\';
         
         trackingDiv.innerHTML = `
             <div>
-                <div class="round-name">${chanceData.roundName}</div>
-                <div class="round-details">${statusText}</div>
+                <div class=\"round-name\">${chanceData.roundName}</div>
+                <div class=\"round-details\">${statusText}</div>
             </div>
             ${buttonsHTML}
         `;
@@ -278,9 +278,9 @@ function renderTracking(chances) {
     });
     
     if (currentRound > 0 || isEliminated) {
-        const resetDiv = document.createElement('div');
-        resetDiv.style.marginTop = '1rem';
-        resetDiv.innerHTML = '<button class="btn-primary" onclick="resetTracking()">Tracking zurücksetzen</button>';
+        const resetDiv = document.createElement(\'div\');
+        resetDiv.style.marginTop = \'1rem\';
+        resetDiv.innerHTML = \'<button class=\"btn-primary\" onclick=\"resetTracking()\">Tracking zurücksetzen</button>\';
         container.appendChild(resetDiv);
     }
 }
@@ -291,7 +291,7 @@ async function markRoundWon(roundIndex) {
     currentRound++;
     
     if (currentRound >= tournamentData.length) {
-        alert('🎉 Glückwunsch! Ben hat das Turnier gewonnen! 🏆');
+        alert(\'🎉 Glückwunsch! Ben hat das Turnier gewonnen! 🏆\');
         currentRound = tournamentData.length;
     }
     
@@ -341,17 +341,17 @@ function updateDisplay() {
 }
 
 // Event Listener
-document.addEventListener('DOMContentLoaded', () => {
-    const calculateButton = document.getElementById('calculateButton');
-    const saveButton = document.getElementById('saveButton');
+document.addEventListener(\'DOMContentLoaded\', () => {
+    const calculateButton = document.getElementById(\'calculateButton\');
+    const saveButton = document.getElementById(\'saveButton\');
 
-    calculateButton.addEventListener('click', async () => {
-        const playerCount = parseInt(document.getElementById('playerCount').value);
-        const gameMode = document.getElementById('gameMode').value;
-        const skillLevel = document.getElementById('skillLevel').value;
+    calculateButton.addEventListener(\'click\', async () => {
+        const playerCount = parseInt(document.getElementById(\'playerCount\').value);
+        const gameMode = document.getElementById(\'gameMode\').value;
+        const skillLevel = document.getElementById(\'skillLevel\').value;
 
         if (isNaN(playerCount) || playerCount < 2) {
-            alert('Bitte geben Sie eine gültige Teilnehmerzahl ein (mindestens 2).');
+            alert(\'Bitte geben Sie eine gültige Teilnehmerzahl ein (mindestens 2).\');
             return;
         }
 
@@ -361,26 +361,26 @@ document.addEventListener('DOMContentLoaded', () => {
         
         updateDisplay();
         
-        document.getElementById('results').style.display = 'block';
-        document.getElementById('tracking').style.display = 'block';
+        document.getElementById(\'results\').style.display = \'block\';
+        document.getElementById(\'tracking\').style.display = \'block\';
     });
 
-    saveButton.addEventListener('click', async () => {
+    saveButton.addEventListener(\'click\', async () => {
         if (!tournamentData) {
-            alert('Bitte berechnen Sie zuerst die Gewinnchancen.');
+            alert(\'Bitte berechnen Sie zuerst die Gewinnchancen.\');
             return;
         }
 
-        const playerCount = parseInt(document.getElementById('playerCount').value);
-        const gameMode = document.getElementById('gameMode').value;
-        const skillLevel = document.getElementById('skillLevel').value;
+        const playerCount = parseInt(document.getElementById(\'playerCount\').value);
+        const gameMode = document.getElementById(\'gameMode\').value;
+        const skillLevel = document.getElementById(\'skillLevel\').value;
 
         currentTournamentId = await saveTournamentToDatabase(playerCount, gameMode, skillLevel, tournamentData);
 
         if (currentTournamentId) {
-            alert('Turnier erfolgreich gespeichert!');
+            alert(\'Turnier erfolgreich gespeichert!\');
         } else {
-            alert('Fehler beim Speichern des Turniers.');
+            alert(\'Fehler beim Speichern des Turniers.\');
         }
     });
 
