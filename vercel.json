@@ -1,39 +1,39 @@
 {
-  "Version": 2,
-  "baut": [
+  "version": 2,
+  "builds": [
     {
       "src": "api/index.py",
-      "verwenden": "@vercel/python"
+      "use": "@vercel/python"
     },
     {
       "src": "index.html",
-      "verwenden": "@vercel/static"
+      "use": "@vercel/static"
     },
     {
       "src": "styles.css",
-      "verwenden": "@vercel/static"
+      "use": "@vercel/static"
     },
     {
       "src": "script.js",
-      "verwenden": "@vercel/static"
+      "use": "@vercel/static"
     }
   ],
-  "Routen": [
+  "routes": [
     {
       "src": "/api/(.*)",
-      "Ziel": "/api/index.py"
+      "dest": "/api/index.py"
     },
     {
       "src": "/styles.css",
-      "Ziel": "/styles.css"
+      "dest": "/styles.css"
     },
     {
       "src": "/script.js",
-      "Ziel": "/script.js"
+      "dest": "/script.js"
     },
     {
       "src": "/(.*)",
-      "Ziel": "/index.html"
+      "dest": "/index.html"
     }
   ]
 }
