@@ -55,7 +55,7 @@ def get_statistics():
             }}
         ]
         avg_result = list(db.tournaments.aggregate(pipeline_avg_round))
-        avg_round = avg_result[0]["avg_round"] if avg_result and "avg_round" in avg_result[0] else 0
+        avg_round = avg_result[0]["avg_round"] if avg_result and avg_result[0] and "avg_round" in avg_result[0] else 0
 
         # Performance-Modell: Durchschnittliche erreichte Runde pro Skill-Level
         pipeline_performance = [
@@ -65,7 +65,7 @@ def get_statistics():
             }}
         ]
         performance_results = list(db.tournaments.aggregate(pipeline_performance))
-        performance_model = {item["_id"]: item["avg_round_reached"] for item in performance_results}
+        performance_model = {item["_id"]: item["avg_round_reached"] for item in performance_results} if performance_results else {}
         
         stats = {
             "total_tournaments": total_tournaments,
