@@ -285,55 +285,6 @@ function renderTracking(chances) {
     }
 }
 
-async function markRoundWon(roundIndex) {
-    if (roundIndex !== currentRound || isEliminated) return;
-    
-    currentRound++;
-    
-    if (currentRound >= tournamentData.length) {
-        alert('🎉 Glückwunsch! Ben hat das Turnier gewonnen! 🏆');
-        currentRound = tournamentData.length;
-    }
-    
-    if (currentTournamentId) {
-        await updateTournamentInDatabase(currentTournamentId, currentRound, isEliminated, tournamentData);
-    }
-    
-    updateDisplay();
-}
-
-async function markRoundLost(roundIndex) {
-    if (roundIndex !== currentRound || isEliminated) return;
-    
-    isEliminated = true;
-    
-    for (let i = currentRound; i < tournamentData.length; i++) {
-        tournamentData[i].isActive = false;
-        tournamentData[i].winChance = 0;
-    }
-    
-    if (currentTournamentId) {
-        await updateTournamentInDatabase(currentTournamentId, currentRound, isEliminated, tournamentData);
-    }
-    
-    updateDisplay();
-}
-
-function resetTracking() {
-    currentRound = 0;
-    isEliminated = false;
-    
-    for (let round of tournamentData) {
-        round.isActive = true;
-    }
-    
-    if (currentTournamentId) {
-        updateTournamentInDatabase(currentTournamentId, currentRound, isEliminated, tournamentData);
-    }
-    
-    updateDisplay();
-}
-
 function updateDisplay() {
     renderResults(tournamentData);
     renderStats(tournamentData);
