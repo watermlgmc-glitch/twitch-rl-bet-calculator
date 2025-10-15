@@ -13,7 +13,8 @@
     {
       "src": "styles.css",
       "use": "@vercel/static"
-    },\n    {
+    },
+    {
       "src": "script.js",
       "use": "@vercel/static"
     }
