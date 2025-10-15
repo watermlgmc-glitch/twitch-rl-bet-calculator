@@ -1,56 +1,50 @@
+// Globale Variablen
 let tournamentData = null;
 let currentRound = 0;
 let isEliminated = false;
 let currentTournamentId = null;
 
+// API Base URL (wird automatisch auf Vercel gesetzt)
 const API_BASE_URL = window.location.origin;
 
+// Skill-Level Multiplikatoren
 const skillMultipliers = {
     'bronze': 0.30,
     'silver': 0.35,
-    'gold': 0.45,
+    'gold': 0.45,      // Standard für Gold 3
     'platinum': 0.55,
     'diamond': 0.65
 };
 
+// Berechne die Anzahl der Runden basierend auf Teilnehmerzahl
 function calculateRounds(playerCount) {
     return Math.ceil(Math.log2(playerCount));
 }
 
-async function calculateWinChances(playerCount, skillLevel) {
+// Berechne Gewinnchancen für jede Runde
+function calculateWinChances(playerCount, skillLevel) {
     const rounds = calculateRounds(playerCount);
     const baseChance = skillMultipliers[skillLevel];
     const chances = [];
     
     let remainingPlayers = playerCount;
     
-    // Lade das Performance-Modell vom Backend
-    const performanceModel = await loadPerformanceModel();
-
     for (let i = 1; i <= rounds; i++) {
-        const roundDifficulty = 1 - (i / (rounds + 2));
-        let roundChance = baseChance * roundDifficulty;
-
-        // Passe die Gewinnchance basierend auf dem Performance-Modell an
-        if (performanceModel && performanceModel[skillLevel]) {
-            const historicalAvgRound = performanceModel[skillLevel];
-            const expectedProgress = i / rounds;
-            const historicalProgress = historicalAvgRound / rounds;
-            
-            // Wenn der Spieler in der Vergangenheit besser abgeschnitten hat als erwartet,
-            // erhöhe die Gewinnchance leicht.
-            if (historicalProgress > expectedProgress) {
-                roundChance *= 1.1; // 10% Bonus
-            }
-        }
-
+        // Berechne die Schwierigkeit basierend auf der Runde
+        // Je weiter im Turnier, desto schwieriger (stärkere Gegner)
+        const roundDifficulty = 1 - (i / (rounds + 2)); // Schwierigkeit steigt
+        
+        // Gewinnchance sinkt mit jeder Runde
+        const roundChance = baseChance * roundDifficulty;
+        
+        // Stelle sicher, dass die Chance zwischen 5% und 95% liegt
         const finalChance = Math.max(5, Math.min(95, roundChance * 100));
         
         chances.push({
             round: i,
             roundName: getRoundName(i, rounds),
             playersRemaining: remainingPlayers,
-            winChance: Math.round(finalChance * 10) / 10,
+            winChance: Math.round(finalChance * 10) / 10, // Runde auf 1 Dezimalstelle
             isActive: true
         });
         
@@ -60,6 +54,7 @@ async function calculateWinChances(playerCount, skillLevel) {
     return chances;
 }
 
+// Gib den Namen der Runde zurück
 function getRoundName(round, totalRounds) {
     const roundsFromEnd = totalRounds - round;
     
@@ -71,9 +66,11 @@ function getRoundName(round, totalRounds) {
     return `Runde ${round}`;
 }
 
+// Berechne die Gesamtgewinnchance (Wahrscheinlichkeit, das gesamte Turnier zu gewinnen)
 function calculateOverallWinChance(chances) {
     if (chances.length === 0) return 0;
     
+    // Multipliziere alle Gewinnchancen (als Dezimalzahlen)
     let overallChance = 1;
     for (let chance of chances) {
         if (chance.isActive) {
@@ -84,15 +81,17 @@ function calculateOverallWinChance(chances) {
         }
     }
     
-    return Math.round(overallChance * 1000) / 10;
+    return Math.round(overallChance * 1000) / 10; // In Prozent, 1 Dezimalstelle
 }
 
+// Bestimme die Farbe basierend auf der Gewinnchance
 function getChanceClass(chance) {
     if (chance >= 40) return 'high';
     if (chance >= 20) return 'medium';
     return 'low';
 }
 
+// API Funktionen
 async function saveTournamentToDatabase(playerCount, gameMode, skillLevel, rounds) {
     try {
         const response = await fetch(`${API_BASE_URL}/api/tournaments`, {
@@ -160,24 +159,13 @@ async function loadStatistics() {
     }
 }
 
-async function loadPerformanceModel() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/statistics`);
-        if (!response.ok) {
-            return null;
-        }
-        const stats = await response.json();
-        return stats.performance_model;
-    } catch (error) {
-        console.error('Fehler beim Laden des Performance-Modells:', error);
-        return null;
-    }
-}
-
+// Zeige globale Statistiken an
 function displayGlobalStatistics(stats) {
+    // Hier könnten wir einen zusätzlichen Bereich für globale Statistiken hinzufügen
     console.log('Globale Statistiken:', stats);
 }
 
+// Rendere die Ergebnisse
 function renderResults(chances) {
     const container = document.getElementById('resultsContainer');
     container.innerHTML = '';
@@ -209,10 +197,12 @@ function renderResults(chances) {
     });
 }
 
+// Rendere die Statistiken
 function renderStats(chances) {
     const totalRounds = chances.length;
     const overallChance = calculateOverallWinChance(chances);
     
+    // Finde beste und schwerste Runde
     let bestRound = chances[0];
     let hardestRound = chances[chances.length - 1];
     
@@ -231,6 +221,7 @@ function renderStats(chances) {
     document.getElementById('hardestRound').textContent = `${hardestRound.roundName} (${hardestRound.winChance}%)`;
 }
 
+// Rendere das Tracking-Interface
 function renderTracking(chances) {
     const container = document.getElementById('trackingContainer');
     container.innerHTML = '';
@@ -239,14 +230,17 @@ function renderTracking(chances) {
         const trackingDiv = document.createElement('div');
         trackingDiv.className = 'tracking-round';
         
+        // Markiere die aktuelle Runde
         if (index === currentRound && !isEliminated) {
             trackingDiv.classList.add('active');
         }
         
+        // Markiere gewonnene Runden
         if (index < currentRound && !isEliminated) {
             trackingDiv.classList.add('won');
         }
         
+        // Markiere, wenn eliminiert
         if (isEliminated && index >= currentRound) {
             trackingDiv.classList.add('eliminated');
         }
@@ -277,6 +271,7 @@ function renderTracking(chances) {
         container.appendChild(trackingDiv);
     });
     
+    // Reset-Button hinzufügen
     if (currentRound > 0 || isEliminated) {
         const resetDiv = document.createElement('div');
         resetDiv.style.marginTop = '1rem';
@@ -285,56 +280,117 @@ function renderTracking(chances) {
     }
 }
 
+// Markiere eine Runde als gewonnen
+async function markRoundWon(roundIndex) {
+    if (roundIndex !== currentRound || isEliminated) return;
+    
+    currentRound++;
+    
+    // Wenn alle Runden gewonnen wurden
+    if (currentRound >= tournamentData.length) {
+        alert('🎉 Glückwunsch! Ben hat das Turnier gewonnen! 🏆');
+        currentRound = tournamentData.length;
+    }
+    
+    // Speichere in Datenbank
+    if (currentTournamentId) {
+        await updateTournamentInDatabase(currentTournamentId, currentRound, isEliminated, tournamentData);
+    }
+    
+    updateDisplay();
+}
+
+// Markiere eine Runde als verloren (Elimination)
+async function markRoundLost(roundIndex) {
+    if (roundIndex !== currentRound || isEliminated) return;
+    
+    isEliminated = true;
+    
+    // Setze alle nachfolgenden Runden auf inaktiv
+    for (let i = currentRound; i < tournamentData.length; i++) {
+        tournamentData[i].isActive = false;
+        tournamentData[i].winChance = 0;
+    }
+    
+    // Speichere in Datenbank
+    if (currentTournamentId) {
+        await updateTournamentInDatabase(currentTournamentId, currentRound, isEliminated, tournamentData);
+    }
+    
+    updateDisplay();
+    
+    alert(`Ben ist in ${tournamentData[roundIndex].roundName} ausgeschieden. Alle nachfolgenden Gewinnchancen wurden auf 0% gesetzt.`);
+}
+
+// Setze das Tracking zurück
+function resetTracking() {
+    currentRound = 0;
+    isEliminated = false;
+    currentTournamentId = null;
+    
+    // Reaktiviere alle Runden
+    const playerCount = parseInt(document.getElementById('playerCount').value);
+    const skillLevel = document.getElementById('benSkill').value;
+    
+    tournamentData = calculateWinChances(playerCount, skillLevel);
+    
+    updateDisplay();
+}
+
+// Aktualisiere die Anzeige
 function updateDisplay() {
+    if (!tournamentData) return;
+    
     renderResults(tournamentData);
     renderStats(tournamentData);
     renderTracking(tournamentData);
 }
 
-// Event Listener
-document.addEventListener('DOMContentLoaded', () => {
-    const calculateButton = document.getElementById('calculateButton');
-    const saveButton = document.getElementById('saveButton');
+// Hauptberechnung
+async function calculate() {
+    const playerCount = parseInt(document.getElementById('playerCount').value);
+    const gameMode = document.getElementById('gameMode').value;
+    const skillLevel = document.getElementById('benSkill').value;
+    
+    // Validierung
+    if (!playerCount || playerCount < 2) {
+        alert('Bitte gib eine gültige Anzahl von Teilnehmern ein (mindestens 2).');
+        return;
+    }
+    
+    // Berechne Gewinnchancen
+    tournamentData = calculateWinChances(playerCount, skillLevel);
+    
+    // Setze Tracking zurück
+    currentRound = 0;
+    isEliminated = false;
+    
+    // Speichere Turnier in Datenbank
+    currentTournamentId = await saveTournamentToDatabase(playerCount, gameMode, skillLevel, tournamentData);
+    
+    if (currentTournamentId) {
+        console.log('Turnier gespeichert mit ID:', currentTournamentId);
+    }
+    
+    // Aktualisiere Anzeige
+    updateDisplay();
+    
+    // Lade Statistiken
+    await loadStatistics();
+}
 
-    calculateButton.addEventListener('click', async () => {
-        const playerCount = parseInt(document.getElementById('playerCount').value);
-        const gameMode = document.getElementById('gameMode').value;
-        const skillLevel = document.getElementById('skillLevel').value;
-
-        if (isNaN(playerCount) || playerCount < 2) {
-            alert('Bitte geben Sie eine gültige Teilnehmerzahl ein (mindestens 2).');
-            return;
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const calculateBtn = document.getElementById('calculateBtn');
+    calculateBtn.addEventListener('click', calculate);
+    
+    // Enter-Taste in Eingabefeldern
+    document.getElementById('playerCount').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            calculate();
         }
-
-        tournamentData = await calculateWinChances(playerCount, skillLevel);
-        currentRound = 0;
-        isEliminated = false;
-        
-        updateDisplay();
-        
-        document.getElementById('results').style.display = 'block';
-        document.getElementById('tracking').style.display = 'block';
     });
-
-    saveButton.addEventListener('click', async () => {
-        if (!tournamentData) {
-            alert('Bitte berechnen Sie zuerst die Gewinnchancen.');
-            return;
-        }
-
-        const playerCount = parseInt(document.getElementById('playerCount').value);
-        const gameMode = document.getElementById('gameMode').value;
-        const skillLevel = document.getElementById('skillLevel').value;
-
-        currentTournamentId = await saveTournamentToDatabase(playerCount, gameMode, skillLevel, tournamentData);
-
-        if (currentTournamentId) {
-            alert('Turnier erfolgreich gespeichert!');
-        } else {
-            alert('Fehler beim Speichern des Turniers.');
-        }
-    });
-
-    // Lade globale Statistiken beim Start
+    
+    // Lade Statistiken beim Start
     loadStatistics();
 });
