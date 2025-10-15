@@ -26,7 +26,7 @@ def get_db():
             # Initialisiere den Client nur einmal
             mongo_client = MongoClient(mongodb_uri)
             # Optional: Testen der Verbindung, um frühe Fehler zu erkennen
-            mongo_client.admin.command(\'ping\') 
+            mongo_client.admin.command('ping') 
             print("MongoDB Client initialized successfully.")
         except Exception as e:
             print(f"ERROR: Failed to initialize MongoDB client: {e}")
@@ -175,11 +175,10 @@ def health_check():
     """Health Check Endpoint"""
     return jsonify({"status": "ok", "message": "API is running"}), 200
 
-# For Vercel Serverless Functions, we typically expose the \'app\' directly
-# Vercel\'s Python runtime will automatically detect the \'app\' variable as the WSGI application.
-# The previous \'handler\' function is not needed if \'app\' is directly exposed.
-# If you need custom request handling, consider using a different approach or Vercel\'s own request handling mechanisms.
-
+# For Vercel Serverless Functions, we typically expose the 'app' directly
+# Vercel's Python runtime will automatically detect the 'app' variable as the WSGI application.
+# The previous 'handler' function is not needed if 'app' is directly exposed.
+# If you need custom request handling, consider using a different approach or Vercel's own request handling mechanisms.
 
 
 
