@@ -84,5 +84,6 @@ def health_check():
     """Health Check Endpoint"""
     return jsonify({"status": "ok", "message": "API is running"}), 200
 
-# For Vercel Serverless Functions, we typically expose the 'app' directly
-# Vercel's Python runtime will automatically detect the 'app' variable as the WSGI application.
+# For Vercel Serverless Functions, we typically expose the \'app\' directly
+# Vercel\'s Python runtime will automatically detect the \'app\' variable as the WSGI application.
+
