@@ -7,16 +7,36 @@ import os
 app = Flask(__name__)
 CORS(app)
 
-# MongoDB Verbindung
+# Globale Variable für den MongoDB Client, um die Wiederverwendung in Serverless-Umgebungen zu ermöglichen
+mongo_client = None
+
 def get_db():
-    """Verbindung zur MongoDB herstellen"""
+    """Verbindung zur MongoDB herstellen und wiederverwenden"""
+    global mongo_client
+    
     mongodb_uri = os.environ.get("MONGODB_URI")
     if not mongodb_uri:
+        print("ERROR: MONGODB_URI environment variable not set.")
+        # In diesem Fall ist es ein Konfigurationsfehler, der behoben werden muss.
+        # Wir geben None zurück, um den Fehler in den Endpunkten zu behandeln.
         return None
     
-    client = MongoClient(mongodb_uri)
-    db = client["twitch_bet_calculator"]
-    return db
+    if mongo_client is None:
+        try:
+            # Initialisiere den Client nur einmal
+            mongo_client = MongoClient(mongodb_uri)
+            # Optional: Testen der Verbindung, um frühe Fehler zu erkennen
+            mongo_client.admin.command(\'ping\') 
+            print("MongoDB Client initialized successfully.")
+        except Exception as e:
+            print(f"ERROR: Failed to initialize MongoDB client: {e}")
+            mongo_client = None # Setze Client zurück, falls Initialisierung fehlschlägt
+            return None
+    
+    if mongo_client:
+        return mongo_client["twitch_bet_calculator"]
+    else:
+        return None
 
 @app.route("/api/tournaments", methods=["GET"])
 def get_tournaments():
@@ -24,12 +44,13 @@ def get_tournaments():
     try:
         db = get_db()
         if not db:
-            return jsonify({"error": "Database not configured"}), 500
+            return jsonify({"error": "Database not configured or connection failed"}), 500
         
         tournaments = list(db.tournaments.find({}, {"_id": 0}).sort("created_at", -1))
         return jsonify(tournaments), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"ERROR in get_tournaments: {e}")
+        return jsonify({"error": "Fehler beim Abrufen der Turniere: " + str(e)}), 500
 
 @app.route("/api/tournaments", methods=["POST"])
 def create_tournament():
@@ -37,7 +58,7 @@ def create_tournament():
     try:
         db = get_db()
         if not db:
-            return jsonify({"error": "Database not configured"}), 500
+            return jsonify({"error": "Database not configured or connection failed"}), 500
         
         data = request.json
         
@@ -58,7 +79,8 @@ def create_tournament():
         
         return jsonify(tournament), 201
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"ERROR in create_tournament: {e}")
+        return jsonify({"error": "Fehler beim Erstellen des Turniers: " + str(e)}), 500
 
 @app.route("/api/tournaments/<tournament_id>", methods=["GET"])
 def get_tournament(tournament_id):
@@ -66,7 +88,7 @@ def get_tournament(tournament_id):
     try:
         db = get_db()
         if not db:
-            return jsonify({"error": "Database not configured"}), 500
+            return jsonify({"error": "Database not configured or connection failed"}), 500
         
         from bson.objectid import ObjectId
         tournament = db.tournaments.find_one({"_id": ObjectId(tournament_id)}, {"_id": 0})
@@ -76,7 +98,8 @@ def get_tournament(tournament_id):
         
         return jsonify(tournament), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"ERROR in get_tournament: {e}")
+        return jsonify({"error": "Fehler beim Abrufen des Turniers: " + str(e)}), 500
 
 @app.route("/api/tournaments/<tournament_id>", methods=["PUT"])
 def update_tournament(tournament_id):
@@ -84,7 +107,7 @@ def update_tournament(tournament_id):
     try:
         db = get_db()
         if not db:
-            return jsonify({"error": "Database not configured"}), 500
+            return jsonify({"error": "Database not configured or connection failed"}), 500
         
         from bson.objectid import ObjectId
         data = request.json
@@ -109,7 +132,8 @@ def update_tournament(tournament_id):
         
         return jsonify({"message": "Tournament updated successfully"}), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"ERROR in update_tournament: {e}")
+        return jsonify({"error": "Fehler beim Aktualisieren des Turniers: " + str(e)}), 500
 
 @app.route("/api/statistics", methods=["GET"])
 def get_statistics():
@@ -117,7 +141,7 @@ def get_statistics():
     try:
         db = get_db()
         if not db:
-            return jsonify({"error": "Database not configured"}), 500
+            return jsonify({"error": "Database not configured or connection failed"}), 500
         
         total_tournaments = db.tournaments.count_documents({})
         tournaments_won = db.tournaments.count_documents({"current_round": {"$exists": True}, "is_eliminated": False})
@@ -143,20 +167,18 @@ def get_statistics():
         
         return jsonify(stats), 200
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"ERROR in get_statistics: {e}")
+        return jsonify({"error": "Fehler beim Abrufen der Statistiken: " + str(e)}), 500
 
 @app.route("/api/health", methods=["GET"])
 def health_check():
     """Health Check Endpoint"""
     return jsonify({"status": "ok", "message": "API is running"}), 200
 
-# For Vercel Serverless Functions, we typically expose the 'app' directly
-# Vercel's Python runtime will automatically detect the 'app' variable as the WSGI application.
-# The previous 'handler' function is not needed if 'app' is directly exposed.
-# If you need custom request handling, consider using a different approach or Vercel's own request handling mechanisms.
-
-
-
+# For Vercel Serverless Functions, we typically expose the \'app\' directly
+# Vercel\'s Python runtime will automatically detect the \'app\' variable as the WSGI application.
+# The previous \'handler\' function is not needed if \'app\' is directly exposed.
+# If you need custom request handling, consider using a different approach or Vercel\'s own request handling mechanisms.
 
 
 
