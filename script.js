@@ -393,4 +393,26 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Lade Statistiken beim Start
     loadStatistics();
+
+    const saveButton = document.getElementById('saveButton');
+    if (saveButton) {
+        saveButton.addEventListener('click', async function() {
+            if (tournamentData) {
+                const playerCount = parseInt(document.getElementById('playerCount').value);
+                const gameMode = document.getElementById('gameMode').value;
+                const skillLevel = document.getElementById('benSkill').value;
+                
+                // Hier rufen wir die saveTournamentToDatabase Funktion auf, um die aktuellen Daten zu speichern.
+                // Wir nutzen die vorhandenen Daten aus tournamentData.
+                const savedTournamentId = await saveTournamentToDatabase(playerCount, gameMode, skillLevel, tournamentData);
+                if (savedTournamentId) {
+                    alert('Gewinnchancen erfolgreich gespeichert!');
+                } else {
+                    alert('Fehler beim Speichern der Gewinnchancen.');
+                }
+            } else {
+                alert('Bitte berechnen Sie zuerst die Gewinnchancen, bevor Sie speichern.');
+            }
+        });
+    }
 });
